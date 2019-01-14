@@ -1,0 +1,4 @@
+Usage: python GEN_LR.py INPUT_DIR OUTPUT_DIR
+
+INPUT_DIR: DIR for high resolution images.
+OUTPUT_DIR: DIR for low resolution images.
