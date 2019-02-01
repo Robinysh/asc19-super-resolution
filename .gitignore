@@ -1,12 +1,14 @@
 .DS_Store
 
-.BasicSR/experiments/*
+BasicSR/experiments/*
 !BasicSR/experiments/pretrained_models
 BasicSR/experiments/pretrained_models/*
 # !BasicSR/experiments/pretrained_models/SRResNet_bicx4_in3nf64nb16.pth
 !BasicSR/experiments/pretrained_models/README.md
 
-.BasicSR/tb_logger/*
+BasicSR/tb_logger/*
 !BasicSR/tb_logger/README.md
+
+ESRGAN/models/*.pth
 __pycache__
 *.pyc
