@@ -1,2 +1,9 @@
 .DS_Store
-.__pycache__
+
+.BasicSR/experiments/*
+!BasicSR/experiments/pretrained_models
+BasicSR/experiments/pretrained_models/*
+# !BasicSR/experiments/pretrained_models/SRResNet_bicx4_in3nf64nb16.pth
+!BasicSR/experiments/pretrained_models/README.md
+
+__pycache__
