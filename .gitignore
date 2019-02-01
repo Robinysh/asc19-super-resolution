@@ -9,3 +9,4 @@ BasicSR/experiments/pretrained_models/*
 .BasicSR/tb_logger/*
 !BasicSR/tb_logger/README.md
 __pycache__
+*.pyc
