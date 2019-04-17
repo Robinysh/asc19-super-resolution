@@ -1,21 +1,21 @@
 {
-  "name": "test_run_RRDB_ESRGAN_x4_DIV2K" //  please remove "debug_" during training
-  , "use_tb_logger": true
+  "name": "test_run_RRDB_ESRGAN_x4_DF2K" //  please remove "debug_" during training
+  , "use_tb_logger": false
   , "model":"srragan"
   , "scale": 4
-  , "gpu_ids": [0]
+  , "gpu_ids": [0,1,2,3,4,5,6,7]
 
   , "datasets": {
     "train": {
       "name": "DIV2K"
       , "mode": "LRHR"
-      , "dataroot_HR": "/data/data/superresolution/DIV2K_train_HR_sub.lmdb"
-      , "dataroot_LR": "/data/data/superresolution/DIV2K_train_HR_sub_bicLRx4.lmdb"
+      , "dataroot_HR": "/lustre/scratch/ASC19/sr/data/master_sub.lmdb"
+      , "dataroot_LR": "/lustre/scratch/ASC19/sr/data/master_sub_bicLRx4.lmdb"
       // "dataroot_LR": "/mnt/SSD/xtwang/BasicSR_datasets/DIV2K800/DIV2K800_sub_bicLRx4.lmdb"
       , "subset_file": null
       , "use_shuffle": true
-      , "n_workers": 5
-      , "batch_size": 16
+      , "n_workers": 28
+      , "batch_size": 192
       , "HR_size": 128
       , "use_flip": true
       , "use_rot": true
@@ -23,15 +23,17 @@
     , "val": {
       "name": "val_set14_part"
       , "mode": "LRHR"
-      , "dataroot_HR": "/data/data/superresolution/DIV2K_valid_HR_sub.lmdb"
-      , "dataroot_LR": "/data/data/superresolution/DIV2K_valid_HR_sub_bicLRx4.lmdb"
+      , "dataroot_HR": "/lustre/scratch/ASC19/sr/data/DIV2K_valid_HR_sub.lmdb"
+      , "dataroot_LR": "/lustre/scratch/ASC19/sr/data/DIV2K_valid_HR_sub_bicLRx4.lmdb"
     }
   }
 
   , "path": {
-    "root": "/home/robinysh/MEGAsync/school/university/computerScience/ASC/asc19/BasicSR"
-    // , "resume_state": "../experiments/debug_002_RRDB_ESRGAN_x4_DIV2K/training_state/16.state"
-    , "pretrain_model_G": "../experiments/pretrained_models/RRDB_ESRGAN_x4.pth"
+    "root": "/lustre/users/s1155079039/sr/asc19-super-resolution/BasicSR"
+     , "resume_state": "../experiments/test_run_RRDB_ESRGAN_x4_DF2K/training_state/118000.state"
+     //, "pretrain_model_G": "../experiments/pretrained_models/RRDB_ESRGAN_x4.pth"
+     , "pretrain_model_G": "../experiments/test_run_RRDB_ESRGAN_x4_DF2K/models/118000_G.pth"
+     , "pretrain_model_D": "../experiments/test_run_RRDB_ESRGAN_x4_DF2K/models/118000_D.pth"
   }
 
   , "network_G": {
@@ -55,10 +57,10 @@
   }
 
   , "train": {
-    "lr_G": 1e-4
+    "lr_G": 1e-5
     , "weight_decay_G": 0
     , "beta1_G": 0.9
-    , "lr_D": 1e-4
+    , "lr_D": 1e-5
     , "weight_decay_D": 0
     , "beta1_D": 0.9
     , "lr_scheme": "MultiStepLR"
@@ -84,6 +86,6 @@
 
   , "logger": {
     "print_freq": 200
-    , "save_checkpoint_freq": 5e3
+    , "save_checkpoint_freq": 2e3
   }
 }

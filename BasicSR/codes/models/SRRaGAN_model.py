@@ -175,9 +175,11 @@ class SRRaGANModel(BaseModel):
             if self.cri_fea:
                 self.log_dict['l_g_fea'] = l_g_fea.item()
             self.log_dict['l_g_gan'] = l_g_gan.item()
+            self.log_dict['l_g_total'] = l_g_total.item()
         # D
         self.log_dict['l_d_real'] = l_d_real.item()
         self.log_dict['l_d_fake'] = l_d_fake.item()
+        self.log_dict['l_d_total'] = l_d_total.item()
 
         if self.opt['train']['gan_type'] == 'wgan-gp':
             self.log_dict['l_d_gp'] = l_d_gp.item()

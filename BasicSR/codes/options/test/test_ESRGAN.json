@@ -3,26 +3,20 @@
   , "suffix": "_ESRGAN"
   , "model": "srragan"
   , "scale": 4
-  , "gpu_ids": [0]
+  , "gpu_ids": [0,1,2,3]
 
   , "datasets": {
     "test_1": { // the 1st test dataset
-      "name": "set5"
+      "name": "asc"
       , "mode": "LRHR"
-      , "dataroot_HR": "/mnt/SSD/xtwang/BasicSR_datasets/val_set5/Set5"
-      , "dataroot_LR": "/mnt/SSD/xtwang/BasicSR_datasets/val_set5/Set5_bicLRx4"
-    }
-    , "test_2": { // the 2nd test dataset
-      "name": "set14"
-      , "mode": "LRHR"
-      , "dataroot_HR": "/mnt/SSD/xtwang/BasicSR_datasets/val_set14/Set14"
-      , "dataroot_LR": "/mnt/SSD/xtwang/BasicSR_datasets/val_set14/Set14_bicLRx4"
+      , "dataroot_HR": "/lustre/users/s1155079039/sr/images"
+      , "dataroot_LR": "/lustre/users/s1155079039/sr/images"
     }
   }
 
   , "path": {
-    "root": "/home/xtwang/Projects/BasicSR"
-    , "pretrain_model_G": "../experiments/pretrained_models/RRDB_ESRGAN_x4.pth"
+    "root": "/lustre/users/s1155079039/sr/asc19-super-resolution/BasicSR"
+    , "pretrain_model_G": "../experiments/test_run_RRDB_ESRGAN_x4_DF2K_perp/models/254000_G.pth"
   }
 
   , "network_G": {
