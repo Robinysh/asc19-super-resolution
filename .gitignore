@@ -12,3 +12,4 @@ BasicSR/tb_logger/*
 ESRGAN/models/*.pth
 __pycache__
 *.pyc
+*.pth
