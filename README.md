@@ -1,1 +1,1 @@
-# asc19-super-resolution
+# ASC19 Super Resolution
