@@ -73,7 +73,8 @@ class LRHRDataset(data.Dataset):
 
                 H_s = _mod(H_s, random_scale, scale, HR_size)
                 W_s = _mod(W_s, random_scale, scale, HR_size)
-                img_HR = cv2.resize(np.copy(img_HR), (W_s, H_s), interpolation=cv2.INTER_LINEAR)
+                #img_HR = cv2.resize(np.copy(img_HR), (W_s, H_s), interpolation=cv2.INTER_LINEAR)
+                img_HR = cv2.resize(np.copy(img_HR), (W_s, H_s), interpolation=cv2.INTER_AREA)
                 # force to 3 channels
                 if img_HR.ndim == 2:
                     img_HR = cv2.cvtColor(img_HR, cv2.COLOR_GRAY2BGR)

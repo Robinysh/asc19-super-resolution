@@ -82,4 +82,5 @@ class BaseModel():
         for i, o in enumerate(resume_optimizers):
             self.optimizers[i].load_state_dict(o)
         for i, s in enumerate(resume_schedulers):
-            self.schedulers[i].load_state_dict(s)
+            #self.schedulers[i].load_state_dict(s)
+            pass

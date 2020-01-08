@@ -14,6 +14,7 @@ import options.options as option
 from utils import util
 from data import create_dataloader, create_dataset
 from models import create_model
+from models.sphereface_pytorch.sphere_score import sphereface
 
 
 def main():
@@ -119,7 +120,9 @@ def main():
 
             # validation
             if current_step % opt['train']['val_freq'] == 0:
+                logger.info('Validating')
                 avg_psnr = 0.0
+                avg_sf = 0.0
                 idx = 0
                 for val_data in val_loader:
                     idx += 1
@@ -147,13 +150,26 @@ def main():
                     cropped_gt_img = gt_img[crop_size:-crop_size, crop_size:-crop_size, :]
                     avg_psnr += util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
 
+                    crop_h = opt['datasets']['train']['HR_crop_h']
+                    crop_w = opt['datasets']['train']['HR_crop_w']
+                    hr_size = opt['datasets']['train']['HR_size']
+                    min_h = (hr_size-crop_h)//2
+                    min_w = (hr_size-crop_w)//2
+                    crop_fake_H = (sr_img.transpose(2,0,1)[None, :,min_h:min_h+crop_h,min_w:min_w+crop_w]*255-127.5)/128
+                    crop_var_H = (gt_img.transpose(2,0,1)[None, :,min_h:min_h+crop_h,min_w:min_w+crop_w]*255-127.5)/128
+                    avg_sf += sphereface(torch.Tensor(crop_fake_H).cuda(), torch.Tensor(crop_var_H).cuda())[0]
+
+                    if idx == 1000:
+                        break
                 avg_psnr = avg_psnr / idx
+                avg_sf = avg_sf / idx
 
                 # log
                 logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
+                logger.info('# Validation # Sphereface: {:.4f}'.format(avg_sf))
                 logger_val = logging.getLogger('val')  # validation logger
-                logger_val.info('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
-                    epoch, current_step, avg_psnr))
+                logger_val.info('<epoch:{:3d}, iter:{:8d}> psnr: {:.4e} sf: {:.4f}'.format(
+                    epoch, current_step, avg_psnr, avg_sf))
                 # tensorboard logger
                 if opt['use_tb_logger'] and 'debug' not in opt['name']:
                     tb_logger.add_scalar('psnr', avg_psnr, current_step)

@@ -121,6 +121,9 @@ def define_D(opt):
     elif which_model == 'dis_acd':  # sft-gan, Auxiliary Classifier Discriminator
         netD = sft_arch.ACD_VGG_BN_96()
 
+    elif which_model == 'discriminator_vgg':
+        netD = arch.Discriminator_VGG(in_nc=opt_net['in_nc'], base_nf=opt_net['nf'], \
+            norm_type=opt_net['norm_type'], mode=opt_net['mode'], act_type=opt_net['act_type'])
     elif which_model == 'discriminator_vgg_96':
         netD = arch.Discriminator_VGG_96(in_nc=opt_net['in_nc'], base_nf=opt_net['nf'], \
             norm_type=opt_net['norm_type'], mode=opt_net['mode'], act_type=opt_net['act_type'])

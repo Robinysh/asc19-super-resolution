@@ -1,15 +1,56 @@
 import os
 import logging
 from collections import OrderedDict
+import math
 
 import torch
 import torch.nn as nn
 from torch.optim import lr_scheduler
+import torchvision
 
 import models.networks as networks
+from models.sphereface_pytorch.sphere_score import sphereface
 from .base_model import BaseModel
 from models.modules.loss import GANLoss, GradientPenaltyLoss
 logger = logging.getLogger('base')
+
+class ExpCosineAnnealingLR(lr_scheduler._LRScheduler):
+    r"""Set the learning rate of each parameter group using a cosine annealing
+    schedule, where :math:`\eta_{max}` is set to the initial lr and
+    :math:`T_{cur}` is the number of epochs since the last restart in SGDR:
+
+    .. math::
+
+        \eta_t = \eta_{min} + \frac{1}{2}(\eta_{max} - \eta_{min})(1 +
+        \cos(\frac{T_{cur}}{T_{max}}\pi))
+
+    When last_epoch=-1, sets initial lr as lr.
+
+    It has been proposed in
+    `SGDR: Stochastic Gradient Descent with Warm Restarts`_. Note that this only
+    implements the cosine annealing part of SGDR, and not the restarts.
+
+    Args:
+        optimizer (Optimizer): Wrapped optimizer.
+        T_max (int): Maximum number of iterations.
+        eta_min (float): Minimum learning rate. Default: 0.
+        last_epoch (int): The index of last epoch. Default: -1.
+
+    .. _SGDR\: Stochastic Gradient Descent with Warm Restarts:
+        https://arxiv.org/abs/1608.03983
+    """
+
+    def __init__(self, optimizer, T_max, eta_min=0, last_epoch=-1, exp_base=1):
+        self.T_max = T_max
+        self.eta_min = eta_min
+        self.exp_base = exp_base
+        super(ExpCosineAnnealingLR, self).__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+        return [(self.exp_base**(self.last_epoch/self.T_max))*
+                (self.eta_min + (base_lr - self.eta_min) *
+                (1 + math.cos(math.pi * (self.last_epoch % self.T_max)/self.T_max)) / 2)
+                for base_lr in self.base_lrs]
 
 
 class SRRaGANModel(BaseModel):
@@ -60,6 +101,7 @@ class SRRaGANModel(BaseModel):
             # GD gan loss
             self.cri_gan = GANLoss(train_opt['gan_type'], 1.0, 0.0).to(self.device)
             self.l_gan_w = train_opt['gan_weight']
+            self.l_sphere_face = train_opt['sphere_face_weight']
             # D_update_ratio and D_init_iters are for WGAN
             self.D_update_ratio = train_opt['D_update_ratio'] if train_opt['D_update_ratio'] else 1
             self.D_init_iters = train_opt['D_init_iters'] if train_opt['D_init_iters'] else 0
@@ -93,6 +135,14 @@ class SRRaGANModel(BaseModel):
                 for optimizer in self.optimizers:
                     self.schedulers.append(lr_scheduler.MultiStepLR(optimizer, \
                         train_opt['lr_steps'], train_opt['lr_gamma']))
+            elif train_opt['lr_scheme'] == 'CosineAnnealingLR':
+                for optimizer in self.optimizers:
+                    self.schedulers.append(lr_scheduler.CosineAnnealingLR(optimizer, \
+                        train_opt['T_max'], train_opt['eta_min']))
+            elif train_opt['lr_scheme'] == 'ExpCosineAnnealingLR':
+                for optimizer in self.optimizers:
+                    self.schedulers.append(ExpCosineAnnealingLR(optimizer, \
+                        T_max=train_opt['T_max'], eta_min=train_opt['eta_min'], exp_base=train_opt['exp_base']))
             else:
                 raise NotImplementedError('MultiStepLR learning rate scheme is enough.')
 
@@ -136,6 +186,19 @@ class SRRaGANModel(BaseModel):
             l_g_gan = self.l_gan_w * (self.cri_gan(pred_d_real - torch.mean(pred_g_fake), False) +
                                       self.cri_gan(pred_g_fake - torch.mean(pred_d_real), True)) / 2
             l_g_total += l_g_gan
+            crop_h = self.opt['datasets']['train']['HR_crop_h']
+            crop_w = self.opt['datasets']['train']['HR_crop_w']
+            hr_size = self.opt['datasets']['train']['HR_size']
+            min_h = (hr_size-crop_h)//2
+            min_w = (hr_size-crop_w)//2
+            #Normalize to format of sphereface
+            crop_fake_H = (self.fake_H[:,:,min_h:min_h+crop_h,min_w:min_w+crop_w]*255-127.5)/128
+            crop_var_H = (self.var_H[:,:,min_h:min_h+crop_h,min_w:min_w+crop_w]*255-127.5)/128
+            #crop_fake_H = torchvision.transforms.functional.center_crop(self.fake_H, (96,112))
+            #crop_var_H = torchvision.transforms.functional.center_crop(self.var_H, (96,112))
+            l_g_sphere = -self.l_sphere_face * sphereface(crop_fake_H, crop_var_H).mean()
+            l_g_total += l_g_sphere
+
 
             l_g_total.backward()
             self.optimizer_G.step()
@@ -151,7 +214,7 @@ class SRRaGANModel(BaseModel):
         l_d_real = self.cri_gan(pred_d_real - torch.mean(pred_d_fake), True)
         l_d_fake = self.cri_gan(pred_d_fake - torch.mean(pred_d_real), False)
 
-        l_d_total = (l_d_real + l_d_fake) / 2
+        l_d_total = (l_d_real+ l_d_fake)/2
 
         if self.opt['train']['gan_type'] == 'wgan-gp':
             batch_size = self.var_ref.size(0)
@@ -175,7 +238,9 @@ class SRRaGANModel(BaseModel):
             if self.cri_fea:
                 self.log_dict['l_g_fea'] = l_g_fea.item()
             self.log_dict['l_g_gan'] = l_g_gan.item()
+            self.log_dict['l_g_sphere'] = l_g_sphere.item()
             self.log_dict['l_g_total'] = l_g_total.item()
+            self.log_dict['sphere_metric'] = -l_g_sphere.item()/self.l_sphere_face
         # D
         self.log_dict['l_d_real'] = l_d_real.item()
         self.log_dict['l_d_fake'] = l_d_fake.item()
